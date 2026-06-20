@@ -746,8 +746,8 @@
     scene.add(treeGroup);
 
     // Outer ring: 20 trees outside grass patch (radius 27+)
-    for (let i = 0; i < 8; i++) {
-        const angle  = (i / 20) * Math.PI * 2 + Math.random() * 0.55;
+    for (let i = 0; i < 4; i++) {
+        const angle  = (i / 4) * Math.PI * 2 + Math.random() * 0.55;
         const radius = 27 + Math.random() * 52;
         const tx = Math.cos(angle) * radius;
         const tz = Math.sin(angle) * radius;
@@ -762,7 +762,6 @@
     // 3 hand-placed scenic trees at inner field edge
     [
         [15,  0, -13, 0.95, 0.9 ],
-        [19,  0,  13, 1.1,  1.1 ],
     ].forEach(([x, y, z, sc, hsc]) => {
         treeGroup.add(makeLowPolyTree(x, y, z, sc, hsc, Math.random() * Math.PI * 2));
     });
@@ -834,8 +833,8 @@
         mtGroup.add(makeMountain(x, -10, z, 40 + Math.random() * 25, 50 + Math.random() * 30, Math.random() * Math.PI * 2));
     }
     // Row 4 — extreme background silhouettes through fog
-    for (let i = 0; i < 8; i++) {
-        const angle  = (i / 8) * Math.PI * 2 + Math.random() * 0.8;
+    for (let i = 0; i < 4; i++) {
+        const angle  = (i / 4) * Math.PI * 2 + Math.random() * 0.8;
         const radius = 220 + Math.random() * 40;
         const x = Math.cos(angle) * radius;
         const z = Math.sin(angle) * radius;
