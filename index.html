@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Zen Garden</title>
+
+    <!-- PWA meta -->
+    <meta name="application-name" content="Zen Garden">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Zen Garden">
+    <meta name="theme-color" content="#74B9FF">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#74B9FF">
+
+    <!-- Inline SVG icon as data URI for apple-touch-icon and manifest -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='90' fill='%2374B9FF'/%3E%3Ccircle cx='256' cy='200' r='110' fill='%234CA832'/%3E%3Ccircle cx='200' cy='220' r='80' fill='%236ABF3E'/%3E%3Ccircle cx='310' cy='215' r='85' fill='%235AAA2A'/%3E%3Crect x='245' y='290' width='22' height='90' rx='8' fill='%237A5230'/%3E%3Cellipse cx='256' cy='390' rx='90' ry='18' fill='%233d6b15'/%3E%3C/svg%3E">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='90' fill='%2374B9FF'/%3E%3Ccircle cx='256' cy='200' r='110' fill='%234CA832'/%3E%3Ccircle cx='200' cy='220' r='80' fill='%236ABF3E'/%3E%3Ccircle cx='310' cy='215' r='85' fill='%235AAA2A'/%3E%3Crect x='245' y='290' width='22' height='90' rx='8' fill='%237A5230'/%3E%3Cellipse cx='256' cy='390' rx='90' ry='18' fill='%233d6b15'/%3E%3C/svg%3E">
+
+    <!-- PWA Manifest embedded as data URI -->
+    <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Zen%20Garden%22%2C%22short_name%22%3A%22Zen%22%2C%22description%22%3A%22Interactive%20low-poly%20zen%20garden%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22orientation%22%3A%22any%22%2C%22background_color%22%3A%22%2374B9FF%22%2C%22theme_color%22%3A%22%2374B9FF%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%2520viewBox%3D'0%25200%2520512%2520512'%253E%253Crect%2520width%3D'512'%2520height%3D'512'%2520rx%3D'90'%2520fill%3D'%252374B9FF'%2F%253E%253Ccircle%2520cx%3D'256'%2520cy%3D'200'%2520r%3D'110'%2520fill%3D'%25234CA832'%2F%253E%253C%2Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%2C%22purpose%22%3A%22any%20maskable%22%7D%5D%7D">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #74B9FF; font-family: 'Georgia', serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+
+        #ui {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        #time-buttons {
+            display: flex;
+            gap: 6px;
+            background: rgba(0,0,0,0.25);
+            backdrop-filter: blur(10px);
+            padding: 6px;
+            border-radius: 12px;
+        }
+
+        .time-btn {
+            background: transparent;
+            color: rgba(255,255,255,0.75);
+            border: none;
+            padding: 6px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: Georgia, serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: background 0.2s, color 0.2s;
+        }
+        .time-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .time-btn.active { background: #fff; color: #000; font-weight: bold; }
+
+        #lock-btn {
+            background: rgba(0,0,0,0.25);
+            backdrop-filter: blur(10px);
+            color: rgba(255,255,255,0.75);
+            border: none;
+            padding: 7px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: Georgia, serif;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: background 0.2s, color 0.2s;
+        }
+        #lock-btn:hover { background: rgba(0,0,0,0.4); color: #fff; }
+        #lock-btn.locked { background: rgba(200,80,80,0.7); color: #fff; }
+
+        #hint {
+            position: absolute;
+            bottom: 24px;
+            left: 0; right: 0;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            pointer-events: none;
+            transition: opacity 1s;
+        }
+        #hint.hidden { opacity: 0; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div id="time-buttons">
+            <button class="time-btn" data-time="morning">Dawn</button>
+            <button class="time-btn active" data-time="day">Day</button>
+            <button class="time-btn" data-time="dusk">Dusk</button>
+            <button class="time-btn" data-time="night">Night</button>
+        </div>
+        <button id="lock-btn">🔓 Orbit</button>
+    </div>
+    <div id="hint">touch &amp; drag to bloom</div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─── ENVIRONMENT PRESETS ────────────────────────────────────────────────────
+    const PRESETS = {
+        morning: {
+            skyColor: new THREE.Color('#ffd8d8'),
+            sunColor: new THREE.Color('#ffebb3'),
+            fogColor: new THREE.Color('#ffc1c1'),
+            fogDensity: 0.010,
+            ambientColor: new THREE.Color('#ffe8d6'),
+            ambientIntensity: 0.7,
+            dirColor: new THREE.Color('#ffa880'),
+            dirIntensity: 1.2,
+            lightPos: new THREE.Vector3(20, 10, 10),
+            groundColor: '#3d6b15',
+            bees: true, fireflies: false,
+        },
+        day: {
+            skyColor: new THREE.Color('#74B9FF'),
+            sunColor: new THREE.Color('#FFF9D2'),
+            fogColor: new THREE.Color('#74B9FF'),
+            fogDensity: 0.010,
+            ambientColor: new THREE.Color('#d9eaff'),
+            ambientIntensity: 0.6,
+            dirColor: new THREE.Color('#ffdca8'),
+            dirIntensity: 1.0,
+            lightPos: new THREE.Vector3(20, 30, 10),
+            groundColor: '#3d6b15',
+            bees: true, fireflies: false,
+        },
+        dusk: {
+            skyColor: new THREE.Color('#ff9066'),
+            sunColor: new THREE.Color('#ff5533'),
+            fogColor: new THREE.Color('#cc5a5a'),
+            fogDensity: 0.014,
+            ambientColor: new THREE.Color('#dda9b3'),
+            ambientIntensity: 0.6,
+            dirColor: new THREE.Color('#ff7733'),
+            dirIntensity: 1.0,
+            lightPos: new THREE.Vector3(-30, 8, 10),
+            groundColor: '#2e4a10',
+            bees: false, fireflies: true,
+        },
+        night: {
+            skyColor: new THREE.Color('#0a101f'),
+            sunColor: new THREE.Color('#c8d8f0'),
+            fogColor: new THREE.Color('#0f172a'),
+            fogDensity: 0.013,
+            ambientColor: new THREE.Color('#202a45'),
+            ambientIntensity: 0.18,
+            dirColor: new THREE.Color('#5c7391'),
+            dirIntensity: 0.4,
+            lightPos: new THREE.Vector3(20, 20, -10),
+            groundColor: '#1a2e0a',
+            bees: false, fireflies: true,
+        }
+    };
+
+    let timeOfDay = 'day';
+    let preset = PRESETS[timeOfDay];
+
+    // ─── SCENE SETUP ────────────────────────────────────────────────────────────
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(preset.fogColor.clone(), preset.fogDensity);
+
+    const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 600);
+    camera.position.set(0, 5, 14);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    document.body.appendChild(renderer.domElement);
+
+    // ─── CONTROLS ───────────────────────────────────────────────────────────────
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.maxPolarAngle = Math.PI / 2 - 0.04;
+    controls.minDistance = 3;
+    controls.maxDistance = 80;
+    controls.enablePan = false;
+
+    let cameraLocked = false;
+    document.getElementById('lock-btn').addEventListener('click', () => {
+        cameraLocked = !cameraLocked;
+        controls.enabled = !cameraLocked;
+        const btn = document.getElementById('lock-btn');
+        btn.textContent = cameraLocked ? '🔒 Locked' : '🔓 Orbit';
+        btn.classList.toggle('locked', cameraLocked);
+    });
+
+    // ─── LIGHTING ───────────────────────────────────────────────────────────────
+    const ambLight = new THREE.AmbientLight(preset.ambientColor, preset.ambientIntensity);
+    scene.add(ambLight);
+
+    const dirLight = new THREE.DirectionalLight(preset.dirColor, preset.dirIntensity);
+    dirLight.position.copy(preset.lightPos);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(2048, 2048);
+    dirLight.shadow.camera.left = -50;
+    dirLight.shadow.camera.right = 50;
+    dirLight.shadow.camera.top = 50;
+    dirLight.shadow.camera.bottom = -50;
+    dirLight.shadow.camera.far = 200;
+    scene.add(dirLight);
+
+    const hemiLight = new THREE.HemisphereLight(preset.ambientColor, 0x213511, preset.ambientIntensity * 0.6);
+    scene.add(hemiLight);
+
+    // ─── NOISE HELPERS ──────────────────────────────────────────────────────────
+    function noise2D(x, z) {
+        // Fast 2D value noise without simplex-noise dependency
+        const ix = Math.floor(x), iz = Math.floor(z);
+        const fx = x - ix, fz = z - iz;
+        const ux = fx * fx * (3 - 2 * fx);
+        const uz = fz * fz * (3 - 2 * fz);
+        const h = (a, b) => {
+            let n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453123;
+            return n - Math.floor(n);
+        };
+        return (
+            h(ix, iz) * (1 - ux) * (1 - uz) +
+            h(ix + 1, iz) * ux * (1 - uz) +
+            h(ix, iz + 1) * (1 - ux) * uz +
+            h(ix + 1, iz + 1) * ux * uz
+        ) * 2 - 1;
+    }
+
+    function fbm(x, z, oct = 4) {
+        let v = 0, amp = 0.5, freq = 1;
+        for (let i = 0; i < oct; i++) {
+            v += noise2D(x * freq, z * freq) * amp;
+            freq *= 2; amp *= 0.5;
+        }
+        return v;
+    }
+
+    // ─── CANVAS TEXTURES ────────────────────────────────────────────────────────
+    function makeNoiseTexture(size = 256, scale = 15) {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const img = ctx.createImageData(size, size);
+        for (let i = 0; i < size; i++) for (let j = 0; j < size; j++) {
+            const n = (noise2D(i / scale, j / scale) * 0.5 + 0.5);
+            const idx = (i + j * size) * 4;
+            img.data[idx] = img.data[idx+1] = img.data[idx+2] = n * 255;
+            img.data[idx+3] = 255;
+        }
+        ctx.putImageData(img, 0, 0);
+        const t = new THREE.CanvasTexture(canvas);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        return t;
+    }
+
+    function makeDiffuseTexture(size = 256) {
+        const canvas = document.createElement('canvas');
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const img = ctx.createImageData(size, size);
+        for (let i = 0; i < size; i++) for (let j = 0; j < size; j++) {
+            const n = noise2D(i / 10, j / 10) * 0.5 + 0.5;
+            const idx = (i + j * size) * 4;
+            img.data[idx]   = (0.2 + n * 0.1) * 255;
+            img.data[idx+1] = (0.6 + n * 0.3) * 255;
+            img.data[idx+2] = (0.1 + n * 0.1) * 255;
+            img.data[idx+3] = 255;
+        }
+        ctx.putImageData(img, 0, 0);
+        const t = new THREE.CanvasTexture(canvas);
+        t.wrapS = t.wrapT = THREE.RepeatWrapping;
+        return t;
+    }
+
+    const noiseTexture = makeNoiseTexture();
+    const diffuseMap = makeDiffuseTexture();
+
+    // ─── GROUND ─────────────────────────────────────────────────────────────────
+    const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(200, 200),
+        new THREE.MeshStandardMaterial({ color: preset.groundColor, roughness: 0.9 })
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // ─── GRASS FRINGE (fully static merged geometry, zero per-frame cost) ──────
+    // Single BufferGeometry with baked vertex colors — one draw call, no shader uniforms.
+    (function buildFringe() {
+        const FRINGE_INNER = 16;
+        const FRINGE_OUTER = 70;
+        const FRINGE_COUNT = 18000;
+
+        // Each blade = 3 vertices (triangle), positions + colors baked at build time
+        const verts  = new Float32Array(FRINGE_COUNT * 3 * 3);
+        const colors = new Float32Array(FRINGE_COUNT * 3 * 3);
+        const W = 0.055; // half-width at base
+
+        for (let i = 0; i < FRINGE_COUNT; i++) {
+            const t    = Math.pow(Math.random(), 0.5);
+            const r    = FRINGE_INNER + t * (FRINGE_OUTER - FRINGE_INNER);
+            const a    = Math.random() * Math.PI * 2;
+            const cx   = Math.cos(a) * r;
+            const cz   = Math.sin(a) * r;
+            const fade = Math.max(0.04, 1.0 - (r - FRINGE_INNER) / (FRINGE_OUTER - FRINGE_INNER));
+            const h    = (0.18 + Math.random() * 0.32) * fade;  // shorter toward outer edge
+            const lean = (Math.random() - 0.5) * 0.18;          // random lean direction
+            const yaw  = Math.random() * Math.PI * 2;
+
+            // Blade face direction (yaw)
+            const dx = Math.cos(yaw), dz = Math.sin(yaw);
+            const px = -dz, pz = dx; // perpendicular
+
+            const vi = i * 9;
+            // Bottom-left
+            verts[vi+0] = cx - px * W;  verts[vi+1] = 0;  verts[vi+2] = cz - pz * W;
+            // Bottom-right
+            verts[vi+3] = cx + px * W;  verts[vi+4] = 0;  verts[vi+5] = cz + pz * W;
+            // Tip (leaned)
+            verts[vi+6] = cx + lean*dx; verts[vi+7] = h;  verts[vi+8] = cz + lean*dz;
+
+            // Colors: dark base → lighter tip, fading to ground-ish at outer edge
+            const botR = 0.06 * fade, botG = 0.20 * fade, botB = 0.04 * fade;
+            const tipR = 0.22 * fade, tipG = 0.48 * fade, tipB = 0.10 * fade;
+            colors[vi+0]=botR; colors[vi+1]=botG; colors[vi+2]=botB;
+            colors[vi+3]=botR; colors[vi+4]=botG; colors[vi+5]=botB;
+            colors[vi+6]=tipR; colors[vi+7]=tipG; colors[vi+8]=tipB;
+        }
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(verts,  3));
+        geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+
+        const mat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.frustumCulled = false;
+        scene.add(mesh);
+        // No uniforms needed — nothing to update each frame
+    })();
+
+    // ─── GRASS SHADER ───────────────────────────────────────────────────────────
+    const FIELD_SIZE = 44;
+    const BLADE_COUNT = 40000;
+
+    const baseGeo = new THREE.PlaneGeometry(0.12, 0.8, 1, 3);
+    baseGeo.translate(0, 0.4, 0);
+
+    const instancedGeo = new THREE.InstancedBufferGeometry().copy(baseGeo);
+    instancedGeo.instanceCount = BLADE_COUNT;
+
+    const bladePos = new Float32Array(BLADE_COUNT * 3);
+    const FIELD_RADIUS = FIELD_SIZE / 2;
+    for (let i = 0; i < BLADE_COUNT; i++) {
+        // Uniform disk distribution (sqrt for uniform area coverage)
+        const angle  = Math.random() * Math.PI * 2;
+        const radius = Math.sqrt(Math.random()) * FIELD_RADIUS;
+        bladePos[i * 3 + 0] = Math.cos(angle) * radius;
+        bladePos[i * 3 + 1] = 0;
+        bladePos[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    instancedGeo.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(bladePos, 3));
+
+    const grassUniforms = {
+        time:            { value: 0 },
+        interactPos:     { value: new THREE.Vector3(999, 999, 999) },
+        interactStrength:{ value: 0.0 },
+        colorBase:       { value: new THREE.Color(0x1a6e28) },
+        colorTip:        { value: new THREE.Color(0x5edf3a) },
+        fogColor:        { value: preset.fogColor.clone() },
+        fogDensity:      { value: preset.fogDensity },
+        ambientColor:    { value: preset.ambientColor.clone() },
+        ambientIntensity:{ value: preset.ambientIntensity },
+        dirColor:        { value: preset.dirColor.clone() },
+        dirIntensity:    { value: preset.dirIntensity },
+        lightPos:        { value: preset.lightPos.clone() },
+        uNoise:          { value: noiseTexture },
+        uDiffuse:        { value: diffuseMap },
+    };
+
+    const grassMat = new THREE.ShaderMaterial({
+        uniforms: grassUniforms,
+        side: THREE.DoubleSide,
+        vertexShader: `
+            varying vec2 vUv;
+            varying float vFogDepth;
+            varying vec3 vColor;
+            uniform float time;
+            uniform vec3 interactPos;
+            uniform float interactStrength;
+            uniform vec3 ambientColor;
+            uniform float ambientIntensity;
+            uniform vec3 dirColor;
+            uniform float dirIntensity;
+            uniform vec3 lightPos;
+            uniform sampler2D uNoise;
+            uniform sampler2D uDiffuse;
+            attribute vec3 instancePosition;
+
+            float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+
+            void main() {
+                vUv = uv;
+                vec3 pos = position;
+                pos.x *= (1.0 - vUv.y);
+
+                float rand = hash(instancePosition.xz);
+                float windScale = 0.045;
+                float phaseX = instancePosition.x * windScale + instancePosition.z * windScale + time * 1.1 + rand * 6.28;
+                float phaseZ = instancePosition.z * windScale - instancePosition.x * windScale + time * 0.9 + rand * 6.28;
+                float freqV = 1.0 + rand * 0.4;
+                float gust = sin(instancePosition.x * 0.02 + instancePosition.z * 0.02 + time * 0.5) * 0.5 + 0.5;
+                float windX = sin(phaseX * freqV) * (0.14 + gust * 0.14) * vUv.y;
+                float windZ = sin(phaseZ * freqV) * (0.14 + gust * 0.14) * vUv.y;
+                pos.x += windX;
+                pos.z += windZ;
+
+                vec4 worldPos = modelMatrix * vec4(pos + instancePosition, 1.0);
+
+                float dist = length(worldPos.xz - interactPos.xz);
+                float interactRadius = 1.3;
+                if (dist < interactRadius && vUv.y > 0.0) {
+                    float push = (1.0 - smoothstep(0.0, interactRadius, dist)) * vUv.y * interactStrength;
+                    vec2 dir = normalize(worldPos.xz - interactPos.xz + vec2(0.0001));
+                    worldPos.xz += dir * push * 0.45;
+                    worldPos.y  -= push * 0.05;
+                }
+
+                gl_Position = projectionMatrix * viewMatrix * worldPos;
+                vFogDepth = -(viewMatrix * worldPos).z;
+
+                vec3 bottomC = vec3(0.07, 0.22, 0.04);
+                vec3 topC    = vec3(0.32, 0.62, 0.13);
+                vec3 base    = mix(bottomC, topC, vUv.y);
+                vec2 uv2     = instancePosition.xz * 0.04;
+                vec3 diff    = texture2D(uDiffuse, uv2).rgb;
+                vec3 noise   = texture2D(uNoise,   uv2).rgb;
+                float hi     = smoothstep(0.7, 1.0, noise.r) * 0.18 * vUv.y;
+
+                vec3 nrm   = normalize(vec3(0.0, 1.0, 0.0));
+                vec3 ldir  = normalize(lightPos);
+                float diff2 = max(dot(nrm, ldir), 0.15);
+                vec3 light  = (ambientColor * ambientIntensity) + (dirColor * dirIntensity * diff2);
+
+                vColor = (base + diff * 0.12 + vec3(hi)) * light * 1.4;
+            }
+        `,
+        fragmentShader: `
+            varying vec2 vUv;
+            varying float vFogDepth;
+            varying vec3 vColor;
+            uniform vec3 fogColor;
+            uniform float fogDensity;
+            void main() {
+                gl_FragColor = vec4(vColor, 1.0);
+                float fogFactor = 1.0 - exp(-fogDensity * fogDensity * vFogDepth * vFogDepth);
+                gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, clamp(fogFactor, 0.0, 1.0));
+            }
+        `
+    });
+
+    const grassMesh = new THREE.Mesh(instancedGeo, grassMat);
+    grassMesh.frustumCulled = false;
+    scene.add(grassMesh);
+
+    // ─── SKY SPHERE + SUN ───────────────────────────────────────────────────────
+    const skyMat = new THREE.MeshBasicMaterial({ color: preset.skyColor.clone(), side: THREE.BackSide, fog: false, depthWrite: false });
+    const skySphere = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), skyMat);
+    skySphere.scale.setScalar(280);
+    skySphere.renderOrder = -2;
+    scene.add(skySphere);
+
+    const sunMat = new THREE.MeshBasicMaterial({ color: preset.sunColor.clone(), fog: false, depthWrite: false });
+    const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(5, 24, 24), sunMat);
+    sunMesh.position.copy(preset.lightPos);
+    sunMesh.renderOrder = -1;
+    scene.add(sunMesh);
+
+    // ─── LOW-POLY ANGULAR CLOUDS ────────────────────────────────────────────────
+    // Faceted icosahedron chunks clustered together — matches reference image 2
+    const cloudGroup = new THREE.Group();
+    scene.add(cloudGroup);
+
+    function makeCloudChunk(r, color) {
+        const geo = new THREE.IcosahedronGeometry(r, 1);
+        const mat = new THREE.MeshLambertMaterial({ color, flatShading: true });
+        return new THREE.Mesh(geo, mat);
+    }
+
+    function makeLowPolyCloud(x, y, z, sc) {
+        const g = new THREE.Group();
+
+        // Image 2 clouds: wide horizontal mass, flat base, puffy angular top
+        // Mix of warm white, pale cream, and very subtle pink/blue tints
+        const tints = [
+            new THREE.Color(0.97, 0.96, 0.93),  // warm cream
+            new THREE.Color(0.96, 0.95, 0.97),  // cool white
+            new THREE.Color(0.98, 0.94, 0.93),  // warm blush
+            new THREE.Color(0.94, 0.95, 0.98),  // pale blue-white
+        ];
+        const pick = () => tints[Math.floor(Math.random() * tints.length)];
+
+        // Wide flat base chunk
+        const baseChunk = makeCloudChunk(2.2 + Math.random() * 0.8, pick());
+        baseChunk.scale.set(1.8, 0.55, 1.2);
+        baseChunk.rotation.y = Math.random() * Math.PI;
+        baseChunk.frustumCulled = false;
+        g.add(baseChunk);
+
+        // 5–8 mid-body chunks spread horizontally
+        const midCount = 5 + Math.floor(Math.random() * 4);
+        for (let i = 0; i < midCount; i++) {
+            const t   = (i / midCount) - 0.5;
+            const ox  = t * (6 + Math.random() * 3);
+            const oy  = Math.random() * 0.8;
+            const oz  = (Math.random() - 0.5) * 2.0;
+            const cr  = 1.0 + Math.random() * 1.2;
+            const c   = makeCloudChunk(cr, pick());
+            c.position.set(ox, oy, oz);
+            c.scale.set(1.1 + Math.random() * 0.4, 0.7 + Math.random() * 0.4, 0.9 + Math.random() * 0.3);
+            c.rotation.set(Math.random() * 0.4, Math.random() * Math.PI, Math.random() * 0.4);
+            c.frustumCulled = false;
+            g.add(c);
+        }
+
+        // 3–5 top peaks — taller, more pointed, offset for irregular silhouette
+        const peakCount = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < peakCount; i++) {
+            const t  = (i / peakCount) - 0.5;
+            const pr = 0.8 + Math.random() * 0.9;
+            const p  = makeCloudChunk(pr, pick());
+            p.position.set(
+                t * (4 + Math.random() * 2) + (Math.random() - 0.5),
+                1.2 + Math.random() * 1.4,
+                (Math.random() - 0.5) * 1.5
+            );
+            p.scale.set(0.9 + Math.random() * 0.3, 1.1 + Math.random() * 0.5, 0.8 + Math.random() * 0.3);
+            p.rotation.set(Math.random() * 0.5, Math.random() * Math.PI, Math.random() * 0.5);
+            p.frustumCulled = false;
+            g.add(p);
+        }
+
+        g.position.set(x, y, z);
+        g.scale.setScalar(sc);
+        g.rotation.y = Math.random() * Math.PI * 2;
+        return g;
+    }
+    for (let i = 0; i < 22; i++) {
+        const angle  = (i / 22) * Math.PI * 2 + Math.random() * 0.4;
+        const radius = 40 + Math.random() * 35;
+        cloudGroup.add(makeLowPolyCloud(
+            Math.cos(angle) * radius,
+            32 + Math.random() * 28,
+            Math.sin(angle) * radius,
+            1.3 + Math.random() * 2.0
+        ));
+    }
+
+    // ─── LOW-POLY TREES ─────────────────────────────────────────────────────────
+    // Organic trunk that curves/leans, 3-5 outward-splayed branches each with
+    // 2-4 large overlapping icosphere foliage blobs — matches images 1 & 2.
+
+    // Single shared time ref — all foliage shaders point to same object
+    const _foliageTime = { value: 0 };
+
+    function makeFoliageMaterial(color) {
+        const mat = new THREE.MeshLambertMaterial({ color, flatShading: true });
+        mat.onBeforeCompile = (shader) => {
+            shader.uniforms.uTime = _foliageTime;  // shared ref, no per-shader tracking
+            shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `vec3 transformed = vec3(position);
+                 vec4 wOrigin = modelMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+                 float windOff = wOrigin.x * 0.08 + wOrigin.z * 0.08 + uTime * 1.1;
+                 float sway = 0.035 + 0.035 * position.y;
+                 transformed.x += sin(windOff) * sway;
+                 transformed.z += cos(windOff * 0.7) * sway;`
+            );
+        };
+        return mat;
+    }
+
+    // Shared trunk material — warm brown like image 1
+    const trunkMaterial = new THREE.MeshLambertMaterial({ color: '#7A5230', flatShading: true });
+
+    // Palette options: bright lime, yellow-green, medium, deep — mix per tree like image 1
+    const foliagePalettes = [
+        ['#88D93E', '#C8E855'],   // bright lime + yellow highlight
+        ['#6BBF38', '#A0D840'],   // medium green + lime
+        ['#5AAA2A', '#8CD040'],   // forest + lime
+        ['#78CC38', '#B8E050'],   // fresh green + yellow
+        ['#4E9A28', '#7BC038'],   // deep forest
+    ];
+
+    // One foliage blob (icosahedron, flat-shaded, detail=1 for polygonal look)
+    function makeBlob(color, r) {
+        // Plain icosahedron — no vertex jitter (non-indexed geo tears apart when jittered)
+        const geo = new THREE.IcosahedronGeometry(r, 1);
+        const m = new THREE.Mesh(geo, makeFoliageMaterial(color));
+        m.castShadow = true;
+        return m;
+    }
+
+    // Foliage cluster: tightly overlapping blobs so they read as one solid canopy mass
+    function makeFoliageCluster(colA, colB, baseR) {
+        const g = new THREE.Group();
+        const count = 3 + Math.floor(Math.random() * 3); // 3–5 blobs
+        for (let i = 0; i < count; i++) {
+            const r   = baseR * (0.70 + Math.random() * 0.45);
+            const col = Math.random() > 0.45 ? colA : colB;
+            const blob = makeBlob(col, r);
+            // Keep spread tight — blobs should heavily overlap, not float apart
+            const spread = baseR * 0.38;
+            blob.position.set(
+                (Math.random() - 0.5) * spread * 2.0,
+                (Math.random() - 0.3) * spread * 0.9,
+                (Math.random() - 0.5) * spread * 2.0
+            );
+            // Only rotate Y — avoids weird shading from tilted flat-shaded faces
+            blob.rotation.y = Math.random() * Math.PI * 2;
+            g.add(blob);
+        }
+        return g;
+    }
+
+    function makeLowPolyTree(x, y, z, sc, heightSc, rotY) {
+        const g = new THREE.Group();
+
+        const [colA, colB] = foliagePalettes[Math.floor(Math.random() * foliagePalettes.length)];
+
+        // Trunk: taller, thicker, slight lean baked in via rotation
+        const trunkH   = 1.8 + Math.random() * 2.0;
+        const trunkBotR = 0.26 + Math.random() * 0.14;
+        const trunkTopR = 0.10 + Math.random() * 0.06;
+        const foliageR  = 1.3 + Math.random() * 0.8;
+
+        // Trunk body — 6-sided low-poly cylinder
+        const trunk = new THREE.Mesh(
+            new THREE.CylinderGeometry(trunkTopR, trunkBotR, trunkH, 6),
+            trunkMaterial
+        );
+        trunk.position.y = trunkH / 2;
+        // Slight natural lean
+        trunk.rotation.z = (Math.random() - 0.5) * 0.12;
+        trunk.castShadow = true;
+        g.add(trunk);
+
+        // Root flares: short thick wedges radiating from base (like image 1)
+        const numRoots = 3 + Math.floor(Math.random() * 2);
+        for (let i = 0; i < numRoots; i++) {
+            const ra = (i / numRoots) * Math.PI * 2 + Math.random() * 0.6;
+            const rl = 0.4 + Math.random() * 0.4;
+            const rg = new THREE.Group();
+            rg.position.y = 0.18;
+            rg.rotation.y = ra;
+            rg.rotation.z = 0.75 + Math.random() * 0.35;
+            const rm = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.04, trunkBotR * 0.55, rl, 5),
+                trunkMaterial
+            );
+            rm.position.y = rl / 2;
+            rg.add(rm);
+            g.add(rg);
+        }
+
+        // Main branches: 3–5, spreading outward from upper trunk
+        const numBranches = 3 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < numBranches; i++) {
+            const ba = (i / numBranches) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
+            // Vary lean: some nearly horizontal, some more upright — like image 1
+            const bLean  = 0.35 + Math.random() * 0.55;
+            const bLen   = 0.9 + Math.random() * 1.3;
+            // Branch spawns anywhere from 55%→95% up trunk
+            const bH     = trunkH * (0.55 + Math.random() * 0.4);
+
+            const bg = new THREE.Group();
+            bg.position.y = bH;
+            bg.rotation.y = ba;
+            bg.rotation.z = bLean;
+
+            // Branch cylinder
+            const br = new THREE.Mesh(
+                new THREE.CylinderGeometry(trunkTopR * 0.45, trunkTopR * 0.8, bLen, 5),
+                trunkMaterial
+            );
+            br.position.y = bLen / 2;
+            br.castShadow = true;
+            bg.add(br);
+
+            // Optional short secondary branch
+            if (Math.random() > 0.45) {
+                const s2Len  = bLen * (0.4 + Math.random() * 0.4);
+                const s2g    = new THREE.Group();
+                s2g.position.y = bLen * (0.5 + Math.random() * 0.4);
+                s2g.rotation.y = (Math.random() - 0.5) * Math.PI;
+                s2g.rotation.z = 0.3 + Math.random() * 0.4;
+                const s2m = new THREE.Mesh(
+                    new THREE.CylinderGeometry(trunkTopR * 0.25, trunkTopR * 0.45, s2Len, 4),
+                    trunkMaterial
+                );
+                s2m.position.y = s2Len / 2;
+                s2g.add(s2m);
+                bg.add(s2g);
+            }
+
+            // Foliage cluster at branch tip — large and wide
+            const cluster = makeFoliageCluster(colA, colB, foliageR * (0.75 + Math.random() * 0.5));
+            cluster.position.y = bLen + foliageR * 0.25;
+            bg.add(cluster);
+
+            g.add(bg);
+        }
+
+        // Top canopy blob cluster sitting above trunk apex
+        const topCluster = makeFoliageCluster(colA, colB, foliageR * (0.8 + Math.random() * 0.4));
+        topCluster.position.y = trunkH + foliageR * 0.15;
+        g.add(topCluster);
+
+        g.position.set(x, y, z);
+        g.scale.set(sc, sc * heightSc, sc);
+        g.rotation.y = rotY;
+        return g;
+    }
+
+    const treeGroup = new THREE.Group();
+    scene.add(treeGroup);
+
+    // Outer ring: 20 trees outside grass patch (radius 27+)
+    for (let i = 0; i < 20; i++) {
+        const angle  = (i / 20) * Math.PI * 2 + Math.random() * 0.55;
+        const radius = 27 + Math.random() * 52;
+        const tx = Math.cos(angle) * radius;
+        const tz = Math.sin(angle) * radius;
+        const n  = fbm(tx * 0.02, tz * 0.02, 4);
+        const ty = (n * 2.8) * Math.max(0, (radius - 22) / 22) - 0.3;
+        treeGroup.add(makeLowPolyTree(tx, ty, tz,
+            1.2 + Math.random() * 1.6,
+            0.85 + Math.random() * 0.65,
+            Math.random() * Math.PI * 2));
+    }
+
+    // 3 hand-placed scenic trees at inner field edge
+    [
+        [15,  0, -13, 0.95, 0.9 ],
+        [19,  0,  13, 1.1,  1.1 ],
+        [-20, 0,   6, 0.9,  1.0 ],
+    ].forEach(([x, y, z, sc, hsc]) => {
+        treeGroup.add(makeLowPolyTree(x, y, z, sc, hsc, Math.random() * Math.PI * 2));
+    });
+
+    // ─── MOUNTAINS ──────────────────────────────────────────────────────────────
+    // Wide, rounded low-poly mountains — tall cone with many radial segments + flat shading
+    // Vertices are jittered to give a natural, non-spike silhouette
+    const mtGroup = new THREE.Group();
+    scene.add(mtGroup);
+
+    function makeMountain(x, y, z, baseRadius, height, rotY) {
+        // ConeGeometry with enough segments to look rounded from distance, flat-shaded
+        const segs = 7; // low-poly but not a spike — 7-sided gives organic shape
+        const geo = new THREE.ConeGeometry(baseRadius, height, segs, 2);
+        geo.rotateY(rotY);
+
+        // Jitter vertices for natural silhouette (skip apex and base ring)
+        const pos = geo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+            const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+            // Don't move apex (top) or base center
+            const isApex = vy > height * 0.45;
+            const isBase = vy < -height * 0.45;
+            if (!isApex && !isBase) {
+                const jitter = 0.12 + Math.random() * 0.18;
+                pos.setX(i, vx * (1 + (Math.random() - 0.5) * jitter));
+                pos.setZ(i, vz * (1 + (Math.random() - 0.5) * jitter));
+                // Slight vertical jitter on mid ring
+                pos.setY(i, vy + (Math.random() - 0.5) * height * 0.08);
+            }
+        }
+        geo.computeVertexNormals();
+
+        // Color varies slightly per mountain: muted purply-green to slate
+        const hue = 0.32 + Math.random() * 0.12;
+        const sat = 0.18 + Math.random() * 0.18;
+        const lit = 0.22 + Math.random() * 0.14;
+        const col = new THREE.Color().setHSL(hue, sat, lit);
+        const mat = new THREE.MeshLambertMaterial({ color: col, flatShading: true });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+    }
+
+    // Row 1 — mid distance, medium peaks
+    for (let i = 0; i < 10; i++) {
+        const angle  = (i / 10) * Math.PI * 2 + Math.random() * 0.5;
+        const radius = 70 + Math.random() * 18;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        mtGroup.add(makeMountain(x, -5, z, 18 + Math.random() * 12, 16 + Math.random() * 12, Math.random() * Math.PI * 2));
+    }
+    // Row 2 — back ring, larger
+    for (let i = 0; i < 12; i++) {
+        const angle  = (i / 12) * Math.PI * 2 + Math.random() * 0.4;
+        const radius = 110 + Math.random() * 25;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        mtGroup.add(makeMountain(x, -7, z, 28 + Math.random() * 18, 28 + Math.random() * 18, Math.random() * Math.PI * 2));
+    }
+    // Row 3 — very distant, tall
+    for (let i = 0; i < 10; i++) {
+        const angle  = (i / 10) * Math.PI * 2 + Math.random() * 0.6;
+        const radius = 165 + Math.random() * 30;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        mtGroup.add(makeMountain(x, -10, z, 40 + Math.random() * 25, 50 + Math.random() * 30, Math.random() * Math.PI * 2));
+    }
+    // Row 4 — extreme background silhouettes through fog
+    for (let i = 0; i < 8; i++) {
+        const angle  = (i / 8) * Math.PI * 2 + Math.random() * 0.8;
+        const radius = 220 + Math.random() * 40;
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        mtGroup.add(makeMountain(x, -14, z, 55 + Math.random() * 30, 70 + Math.random() * 40, Math.random() * Math.PI * 2));
+    }
+
+    // ─── FLOWERS ────────────────────────────────────────────────────────────────
+    // Pre-built shared geometries + per-color material cache.
+    // Spawn just picks from pools — no geometry/material creation at runtime.
+
+    const FLOWER_COLORS = [0xff1a1a, 0xffee00, 0x4488ff, 0xff66cc, 0xffffff, 0x9944ff, 0xff6600, 0x00ddaa];
+    const activeFlowers = [], fadingFlowers = [];
+    const MAX_FLOWERS = 120;
+
+    // Shared geometries — created once
+    const _fGeo = {
+        stem:   new THREE.CylinderGeometry(0.018, 0.018, 0.5, 5),
+        poppy:  new THREE.ConeGeometry(0.18, 0.22, 5, 1, true),
+        tulip:  new THREE.CapsuleGeometry(0.1, 0.2, 4, 6),
+        daisy:  new THREE.CylinderGeometry(0.19, 0.19, 0.025, 8),
+        center: new THREE.SphereGeometry(0.065, 6, 6),
+    };
+
+    // Shared stem material (one for all flowers)
+    const _stemMat = new THREE.MeshLambertMaterial({ color: 0x15521e });
+
+    // Daisy center material (shared)
+    const _centerMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+
+    // Per-color petal material cache — created once per color, reused
+    const _petalMats = {};
+    FLOWER_COLORS.forEach(c => {
+        _petalMats[c] = new THREE.MeshLambertMaterial({
+            color: c, side: THREE.DoubleSide,
+            emissive: new THREE.Color(c), emissiveIntensity: 0.0
+        });
+    });
+
+    // Pool of 40 glow lights — enough to cover a full field of flowers.
+    // Low intensity + small radius keeps each light cheap on mobile.
+    const GLOW_POOL_SIZE = 40;
+    const glowPool = Array.from({ length: GLOW_POOL_SIZE }, () => {
+        const l = new THREE.PointLight(0xffffff, 0, 3.2, 2.0); // decay=2 = physically correct falloff
+        l.visible = false;
+        scene.add(l);
+        return l;
+    });
+
+    function spawnFlower(pos) {
+        if (pos.x * pos.x + pos.z * pos.z > 22 * 22) return;
+
+        const color   = FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)];
+        const species = Math.floor(Math.random() * 3);
+        const petalMat = _petalMats[color];
+
+        const group = new THREE.Group();
+        group.position.copy(pos);
+        group.position.y = 0;
+        group.scale.setScalar(0.01);
+        group.rotation.y = Math.random() * Math.PI * 2;
+
+        // Stem
+        const stem = new THREE.Mesh(_fGeo.stem, _stemMat);
+        stem.position.y = 0.25;
+        group.add(stem);
+
+        // Head
+        if (species === 0) {
+            const head = new THREE.Mesh(_fGeo.poppy, petalMat);
+            head.rotation.x = Math.PI;
+            head.position.y = 0.56;
+            group.add(head);
+        } else if (species === 1) {
+            const head = new THREE.Mesh(_fGeo.tulip, petalMat);
+            head.position.y = 0.65;
+            group.add(head);
+        } else {
+            const head = new THREE.Mesh(_fGeo.daisy, petalMat);
+            head.position.y = 0.52;
+            group.add(head);
+            const center = new THREE.Mesh(_fGeo.center, _centerMat);
+            center.position.y = 0.54;
+            group.add(center);
+        }
+
+        const targetScale = 0.85 + Math.random() * 1.0;
+        const growSpeed   = 0.5 + Math.random() * 0.8;
+
+        scene.add(group);
+        activeFlowers.push({ mesh: group, petalMat, targetScale, growSpeed });
+        playFlowerChime();
+
+        if (activeFlowers.length > MAX_FLOWERS) {
+            fadingFlowers.push(activeFlowers.shift());
+        }
+    }
+
+    // ─── BEES ───────────────────────────────────────────────────────────────────
+    // Proper bee meshes: striped body + two translucent wings + stinger
+    // They orbit flowers inside the grass field at low altitude
+
+    function makeBeeBody() {
+        const g = new THREE.Group();
+
+        // Body segments — alternating yellow/black rings
+        const bodySegs = [
+            { y: 0.00, r: 0.038, color: '#FFD700' },
+            { y: 0.05, r: 0.048, color: '#1a1008' },
+            { y: 0.10, r: 0.052, color: '#FFD700' },
+            { y: 0.15, r: 0.048, color: '#1a1008' },
+            { y: 0.20, r: 0.038, color: '#FFD700' },
+        ];
+        bodySegs.forEach(seg => {
+            const m = new THREE.Mesh(
+                new THREE.SphereGeometry(seg.r, 6, 5),
+                new THREE.MeshLambertMaterial({ color: seg.color })
+            );
+            m.position.y = seg.y;
+            m.scale.set(1, 0.7, 1);
+            g.add(m);
+        });
+
+        // Head
+        const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.032, 6, 5),
+            new THREE.MeshLambertMaterial({ color: '#1a1008' })
+        );
+        head.position.y = 0.25;
+        g.add(head);
+
+        // Stinger
+        const stinger = new THREE.Mesh(
+            new THREE.ConeGeometry(0.010, 0.04, 4),
+            new THREE.MeshLambertMaterial({ color: '#1a1008' })
+        );
+        stinger.position.y = -0.04;
+        stinger.rotation.x = Math.PI;
+        g.add(stinger);
+
+        // Wings — flat translucent planes
+        const wingMat = new THREE.MeshBasicMaterial({
+            color: '#d0f0ff', transparent: true, opacity: 0.45,
+            side: THREE.DoubleSide, depthWrite: false
+        });
+        const wingGeo = new THREE.PlaneGeometry(0.18, 0.10);
+
+        const lWing = new THREE.Mesh(wingGeo, wingMat);
+        lWing.position.set(-0.11, 0.18, 0);
+        lWing.rotation.x = -Math.PI / 10;
+        g.add(lWing);
+        g.userData.lWing = lWing;
+
+        const rWing = new THREE.Mesh(wingGeo, wingMat);
+        rWing.position.set( 0.11, 0.18, 0);
+        rWing.rotation.x = -Math.PI / 10;
+        g.add(rWing);
+        g.userData.rWing = rWing;
+
+        return g;
+    }
+
+    const BEE_COUNT = 6;
+    const bees3D = [];
+    const beeGroup = new THREE.Group();
+    scene.add(beeGroup);
+
+    const beeData = Array.from({ length: BEE_COUNT }, (_, i) => {
+        const bee = makeBeeBody();
+        beeGroup.add(bee);
+        bees3D.push(bee);
+        return {
+            bee,
+            speed:  0.6 + Math.random() * 1.4,
+            radius: 1.5 + Math.random() * 14,
+            height: 0.5 + Math.random() * 2.5,
+            phase:  Math.random() * Math.PI * 2,
+            offX:   Math.random() * 100,
+            offY:   Math.random() * 100,
+            wingPh: Math.random() * Math.PI * 2,
+        };
+    });
+
+    const _beeDummy = new THREE.Object3D();
+
+    // ─── FIREFLIES ──────────────────────────────────────────────────────────────
+    const FF_COUNT = 400;
+    const ffPositions = new Float32Array(FF_COUNT * 3);
+    const ffPhases    = new Float32Array(FF_COUNT);
+    for (let i = 0; i < FF_COUNT; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * 40;
+        ffPositions[i * 3]     = Math.cos(a) * r;
+        ffPositions[i * 3 + 1] = 0.5 + Math.random() * 2.5;
+        ffPositions[i * 3 + 2] = Math.sin(a) * r;
+        ffPhases[i] = Math.random() * Math.PI * 2;
+    }
+
+    const ffGeo = new THREE.BufferGeometry();
+    ffGeo.setAttribute('position', new THREE.BufferAttribute(ffPositions, 3));
+
+    const ffMat = new THREE.PointsMaterial({
+        size: 0.14,
+        color: '#b5ff54',
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+    });
+    const fireflies = new THREE.Points(ffGeo, ffMat);
+    scene.add(fireflies);
+
+    // ─── AUDIO ──────────────────────────────────────────────────────────────────
+    let audioCtx = null, windGain = null, audioReady = false, lastChime = 0;
+
+    function initAudio() {
+        if (audioReady) return;
+        audioReady = true;
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        const bufLen = audioCtx.sampleRate * 3;
+        const noiseBuf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+        const nd = noiseBuf.getChannelData(0);
+        for (let i = 0; i < bufLen; i++) nd[i] = Math.random() * 2 - 1;
+        const noiseNode = audioCtx.createBufferSource();
+        noiseNode.buffer = noiseBuf;
+        noiseNode.loop = true;
+        noiseNode.start();
+
+        // Wind: low-pass filtered noise
+        const windLp = audioCtx.createBiquadFilter();
+        windLp.type = 'lowpass';
+        windLp.frequency.value = 300;
+        windLp.Q.value = 1.2;
+        windGain = audioCtx.createGain();
+        windGain.gain.value = 0.05;
+        noiseNode.connect(windLp);
+        windLp.connect(windGain);
+        windGain.connect(audioCtx.destination);
+
+        // Ambient rustle: bandpass
+        const bp = audioCtx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = 900;
+        bp.Q.value = 0.5;
+        const ag = audioCtx.createGain();
+        ag.gain.value = 0.014;
+        noiseNode.connect(bp);
+        bp.connect(ag);
+        ag.connect(audioCtx.destination);
+
+        scheduleBirdChirps();
+    }
+
+    function scheduleBirdChirps() {
+        if (!audioCtx) return;
+        setTimeout(() => { playBirdChirp(); scheduleBirdChirps(); }, (3 + Math.random() * 8) * 1000);
+    }
+
+    function playBirdChirp() {
+        if (!audioCtx || timeOfDay === 'night') return;
+        const notes = 2 + Math.floor(Math.random() * 3);
+        const baseFreq = 1100 + Math.random() * 900;
+        for (let i = 0; i < notes; i++) {
+            const t = audioCtx.currentTime + i * 0.088;
+            const osc = audioCtx.createOscillator();
+            const env = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(baseFreq + i * 160, t);
+            osc.frequency.exponentialRampToValueAtTime(baseFreq + i * 160 + 100, t + 0.07);
+            env.gain.setValueAtTime(0, t);
+            env.gain.linearRampToValueAtTime(0.07, t + 0.01);
+            env.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+            osc.connect(env); env.connect(audioCtx.destination);
+            osc.start(t); osc.stop(t + 0.1);
+        }
+    }
+
+    function playFlowerChime() {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        if (now - lastChime < 0.12) return;
+        lastChime = now;
+        const freqs = [523, 659, 784, 1047];
+        const freq = freqs[Math.floor(Math.random() * freqs.length)] * (0.92 + Math.random() * 0.16);
+        const osc = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        env.gain.setValueAtTime(0, now);
+        env.gain.linearRampToValueAtTime(0.065, now + 0.01);
+        env.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc.connect(env); env.connect(audioCtx.destination);
+        osc.start(now); osc.stop(now + 0.65);
+    }
+
+    // ─── BIRDS ──────────────────────────────────────────────────────────────────
+    // Low-poly V-formation flocks gliding across the sky on slow arcing orbits.
+
+    function makeBird() {
+        const g = new THREE.Group();
+        const bMat = new THREE.MeshLambertMaterial({ color: '#1a1008', side: THREE.DoubleSide, flatShading: true });
+
+        // Body sliver
+        const bodyGeo = new THREE.BufferGeometry();
+        bodyGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+             0,    0,  0.20,
+            -0.05, 0,  0,
+             0.05, 0,  0,
+             0,    0, -0.14,
+        ]), 3));
+        bodyGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2, 1,3,2]), 1));
+        bodyGeo.computeVertexNormals();
+        g.add(new THREE.Mesh(bodyGeo, bMat));
+
+        // Left wing pivot group
+        const lw = new THREE.Group();
+        lw.position.x = -0.04;
+        const lwGeo = new THREE.BufferGeometry();
+        lwGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+            0, 0, 0,  -0.58, 0.06, 0.05,  0, 0, -0.10
+        ]), 3));
+        lwGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]), 1));
+        lwGeo.computeVertexNormals();
+        lw.add(new THREE.Mesh(lwGeo, bMat));
+        g.add(lw);
+        g.userData.lw = lw;
+
+        // Right wing pivot group (mirror)
+        const rw = new THREE.Group();
+        rw.position.x = 0.04;
+        const rwGeo = new THREE.BufferGeometry();
+        rwGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+            0, 0, 0,  0.58, 0.06, 0.05,  0, 0, -0.10
+        ]), 3));
+        rwGeo.setIndex(new THREE.BufferAttribute(new Uint16Array([0,1,2]), 1));
+        rwGeo.computeVertexNormals();
+        rw.add(new THREE.Mesh(rwGeo, bMat));
+        g.add(rw);
+        g.userData.rw = rw;
+
+        return g;
+    }
+
+    const BIRD_FLOCKS = 2, BIRDS_PER_FLOCK = 5;
+    const birdGroup = new THREE.Group();
+    scene.add(birdGroup);
+
+    const flocks = Array.from({ length: BIRD_FLOCKS }, (_, fi) => {
+        const flock = {
+            birds: [],
+            radius: 55 + Math.random() * 35,
+            height: 22 + Math.random() * 18,
+            speed:  0.07 + Math.random() * 0.06,
+            phase:  (fi / BIRD_FLOCKS) * Math.PI * 2 + Math.random() * 0.8,
+            tilt:   (Math.random() - 0.5) * 0.25,
+            wingPh: Math.random() * Math.PI * 2,
+        };
+        for (let bi = 0; bi < BIRDS_PER_FLOCK; bi++) {
+            const bird = makeBird();
+            const row  = Math.floor((bi + 1) / 2);
+            const side = bi % 2 === 0 ? 1 : -1;
+            bird.userData.formX = side * row * 0.6;
+            bird.userData.formZ = row * 0.6;
+            bird.userData.wingOff = bi * 0.28;
+            birdGroup.add(bird);
+            flock.birds.push(bird);
+        }
+        return flock;
+    });
+
+    // ─── INTERACTION ────────────────────────────────────────────────────────────
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const interactPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const planeHit = new THREE.Vector3();
+
+    let targetInteractPos = new THREE.Vector3(999, 999, 999);
+    let isInteracting = false, isPointerDown = false;
+    let lastSpawnPos = new THREE.Vector3(999, 999, 999);
+    let hasTouched = false;
+
+    function updateInteract(cx, cy) {
+        mouse.x = (cx / innerWidth) * 2 - 1;
+        mouse.y = -(cy / innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+        raycaster.ray.intersectPlane(interactPlane, planeHit);
+        if (!planeHit) return;
+
+        targetInteractPos.copy(planeHit);
+        isInteracting = true;
+
+        if (isPointerDown && planeHit.distanceTo(lastSpawnPos) > 0.35) {
+            spawnFlower(planeHit.clone());
+            lastSpawnPos.copy(planeHit);
+        }
+    }
+
+    renderer.domElement.addEventListener('mousedown', e => {
+        if (e.target !== renderer.domElement) return;
+        isPointerDown = true;
+        if (!hasTouched) {
+            hasTouched = true;
+            document.getElementById('hint').classList.add('hidden');
+            initAudio();
+        }
+        updateInteract(e.clientX, e.clientY);
+    });
+    renderer.domElement.addEventListener('mousemove', e => { if (isPointerDown || !cameraLocked) updateInteract(e.clientX, e.clientY); });
+    window.addEventListener('mouseup',  () => { isPointerDown = false; isInteracting = false; });
+    window.addEventListener('mouseout', () => { isPointerDown = false; isInteracting = false; });
+
+    renderer.domElement.addEventListener('touchstart', e => {
+        isPointerDown = true;
+        if (!hasTouched) {
+            hasTouched = true;
+            document.getElementById('hint').classList.add('hidden');
+            initAudio();
+        }
+        if (e.touches.length > 0) updateInteract(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    renderer.domElement.addEventListener('touchmove', e => {
+        if (e.touches.length > 0) updateInteract(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    window.addEventListener('touchend', () => { isPointerDown = false; isInteracting = false; });
+
+    // ─── TIME OF DAY UI ─────────────────────────────────────────────────────────
+    document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            timeOfDay = btn.dataset.time;
+            preset = PRESETS[timeOfDay];
+        });
+    });
+
+    // ─── RESIZE ─────────────────────────────────────────────────────────────────
+    window.addEventListener('resize', () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // ─── ANIMATE ────────────────────────────────────────────────────────────────
+    const clock = new THREE.Clock();
+    const _lerpA = new THREE.Color(), _lerpB = new THREE.Color(), _lerpC = new THREE.Vector3();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        const elapsed = clock.getElapsedTime();
+
+        // ── Transition environment ──
+        const s = Math.min(delta * 2.0, 1);
+        ambLight.color.lerp(preset.ambientColor, s);
+        ambLight.intensity += (preset.ambientIntensity - ambLight.intensity) * s;
+        dirLight.color.lerp(preset.dirColor, s);
+        dirLight.intensity += (preset.dirIntensity - dirLight.intensity) * s;
+        dirLight.position.lerp(preset.lightPos, s);
+        hemiLight.color.lerp(preset.ambientColor, s);
+        hemiLight.intensity += (preset.ambientIntensity * 0.6 - hemiLight.intensity) * s;
+        skyMat.color.lerp(preset.skyColor, s);
+        sunMat.color.lerp(preset.sunColor, s);
+        sunMesh.position.lerp(preset.lightPos, s);
+
+        // Fog
+        scene.fog.color.lerp(preset.fogColor, s);
+        scene.fog.density += (preset.fogDensity - scene.fog.density) * s;
+
+        // Grass uniforms
+        grassUniforms.time.value = elapsed;
+        grassUniforms.fogColor.value.lerp(preset.fogColor, s);
+        grassUniforms.fogDensity.value += (preset.fogDensity - grassUniforms.fogDensity.value) * s;
+        grassUniforms.ambientColor.value.lerp(preset.ambientColor, s);
+        grassUniforms.ambientIntensity.value += (preset.ambientIntensity - grassUniforms.ambientIntensity.value) * s;
+        grassUniforms.dirColor.value.lerp(preset.dirColor, s);
+        grassUniforms.dirIntensity.value += (preset.dirIntensity - grassUniforms.dirIntensity.value) * s;
+        grassUniforms.lightPos.value.lerp(preset.lightPos, s);
+
+        // Grass interaction
+        grassUniforms.interactPos.value.lerp(targetInteractPos, 0.15);
+        const tgt = isInteracting ? 1.0 : 0.0;
+        grassUniforms.interactStrength.value += (tgt - grassUniforms.interactStrength.value) * 0.08;
+        if (!isInteracting) targetInteractPos.set(999, 999, 999);
+
+        // ── Foliage wind sway — single shared uniform, one write ──
+        _foliageTime.value = elapsed;
+
+        // ── Clouds rotate ──
+        cloudGroup.rotation.y = elapsed * 0.018;
+
+        // ── Grow active flowers ──
+        for (const f of activeFlowers) {
+            if (f.mesh.scale.x < f.targetScale) {
+                f.mesh.scale.addScalar(f.growSpeed * delta);
+                if (f.mesh.scale.x >= f.targetScale) f.mesh.scale.setScalar(f.targetScale);
+            }
+        }
+
+        // ── Fade old flowers — shrink cleanly, clamp to avoid negative scale ──
+        for (let i = fadingFlowers.length - 1; i >= 0; i--) {
+            const f = fadingFlowers[i];
+            const sc = Math.max(0, f.mesh.scale.x - f.mesh.scale.x * delta * 4.0);
+            f.mesh.scale.setScalar(sc);
+            if (sc <= 0.01) {
+                scene.remove(f.mesh);
+                fadingFlowers.splice(i, 1);
+            }
+        }
+
+        // ── Bees ──
+        const beeVisible = preset.bees;
+        beeGroup.visible = beeVisible;
+        if (beeVisible) {
+            beeData.forEach(bd => {
+                const t  = elapsed * bd.speed + bd.phase;
+                const bx = Math.cos(t + bd.offX) * bd.radius;
+                const bz = Math.sin(t)            * bd.radius;
+                const by = bd.height + Math.sin(t * 2.5 + bd.offY) * 0.4;
+                bd.bee.position.set(bx, by, bz);
+                // Face direction of travel
+                const nx = Math.cos(t + 0.03 + bd.offX) * bd.radius;
+                const nz = Math.sin(t + 0.03)            * bd.radius;
+                const ny = bd.height + Math.sin((t+0.03)*2.5 + bd.offY) * 0.4;
+                bd.bee.lookAt(nx, ny, nz);
+                bd.bee.rotation.x = 0; // keep upright
+                // Wing buzz — fast flap
+                const wf = Math.sin(elapsed * 28 + bd.wingPh) * 0.4;
+                if (bd.bee.userData.lWing) {
+                    bd.bee.userData.lWing.rotation.z =  wf;
+                    bd.bee.userData.rWing.rotation.z = -wf;
+                }
+            });
+        }
+
+        // ── Flower glow — emissive on shared mats + roaming pool lights ──
+        const isNight = (timeOfDay === 'night' || timeOfDay === 'dusk');
+        const glowTarget = isNight ? 0.65 : 0.0;
+        Object.values(_petalMats).forEach(mat => {
+            mat.emissiveIntensity += (glowTarget - mat.emissiveIntensity) * Math.min(delta * 1.2, 1);
+        });
+        // Assign pool lights to flowers — all get a light, sorted by camera distance
+        // so the most visible ones are always lit. Distant ones fall back to emissive only.
+        const camPos = camera.position;
+        const sorted = activeFlowers.slice().sort((a, b) => {
+            const da = a.mesh.position.distanceToSquared(camPos);
+            const db = b.mesh.position.distanceToSquared(camPos);
+            return da - db;
+        });
+        const targetIntensity = isNight ? 0.9 : 0.0;
+        glowPool.forEach((light, i) => {
+            const f = sorted[i];
+            if (f && isNight) {
+                light.color.set(f.petalMat.color);
+                light.position.copy(f.mesh.position);
+                light.position.y += 0.55;
+                light.visible = true;
+            }
+            // Fade intensity toward target (or 0 if no flower assigned / daytime)
+            const target = (f && isNight) ? targetIntensity : 0;
+            light.intensity += (target - light.intensity) * Math.min(delta * 2.0, 1);
+            if (!isNight && light.intensity < 0.01) light.visible = false;
+        });
+
+        // ── Fireflies ──
+        const ffTarget = preset.fireflies ? 0.82 : 0.0;
+        ffMat.opacity += (ffTarget - ffMat.opacity) * Math.min(delta * 1.5, 1);
+        fireflies.visible = ffMat.opacity > 0.01;
+        if (fireflies.visible) {
+            const arr = ffGeo.attributes.position.array;
+            for (let i = 0; i < FF_COUNT; i++) {
+                const ph = ffPhases[i];
+                arr[i*3]   += Math.sin(elapsed * 0.2 + ph) * delta * 0.18;
+                arr[i*3+2] += Math.cos(elapsed * 0.2 + ph) * delta * 0.18;
+                arr[i*3+1] += Math.sin(elapsed * 1.4 + ph) * delta * 0.1;
+                if (arr[i*3+1] < 0.2) arr[i*3+1] = 0.2;
+            }
+            ffGeo.attributes.position.needsUpdate = true;
+        }
+
+        // ── Birds ──
+        const birdVisible = (timeOfDay !== 'night');
+        birdGroup.visible = birdVisible;
+        if (birdVisible) {
+            flocks.forEach(flock => {
+                const t = elapsed * flock.speed + flock.phase;
+                // Leader position on orbit ellipse
+                const lx = Math.cos(t) * flock.radius;
+                const lz = Math.sin(t) * flock.radius * 0.6;
+                const ly = flock.height + Math.sin(t * 0.7) * 4;
+
+                // Forward direction (tangent)
+                const nx = Math.cos(t + 0.02) * flock.radius;
+                const nz = Math.sin(t + 0.02) * flock.radius * 0.6;
+                const ny = flock.height + Math.sin((t + 0.02) * 0.7) * 4;
+                const fwd = new THREE.Vector3(nx - lx, ny - ly, nz - lz).normalize();
+                const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
+                const up    = new THREE.Vector3().crossVectors(right, fwd).normalize();
+
+                flock.birds.forEach((bird, bi) => {
+                    // V-formation offset in flock's local space
+                    const fx = bird.userData.formX;
+                    const fz = bird.userData.formZ;
+                    bird.position.set(
+                        lx + right.x * fx - fwd.x * fz,
+                        ly + right.y * fx - fwd.y * fz,
+                        lz + right.z * fx - fwd.z * fz
+                    );
+                    // Face forward
+                    bird.lookAt(bird.position.clone().add(fwd));
+
+                    // Wing flap — slow gentle glide beat
+                    const wingT = elapsed * 1.4 + flock.wingPh + bird.userData.wingOff;
+                    const flapAngle = Math.sin(wingT) * 0.38;
+                    bird.userData.lw.rotation.z =  flapAngle;
+                    bird.userData.rw.rotation.z = -flapAngle;
+                });
+            });
+        }
+
+        if (!cameraLocked) controls.update();
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // ─── SERVICE WORKER ─────────────────────────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+            .then(reg => {
+                console.log('[ZenGarden] SW registered', reg.scope);
+                window.addEventListener('beforeinstallprompt', e => {
+                    e.preventDefault();
+                    window._installPrompt = e;
+                    const btn = document.createElement('button');
+                    btn.id = 'install-btn';
+                    btn.textContent = '⬇ Install App';
+                    btn.style.cssText = [
+                        'position:fixed','bottom:24px','left:50%','transform:translateX(-50%)',
+                        'background:rgba(0,0,0,0.35)','backdrop-filter:blur(10px)',
+                        'color:rgba(255,255,255,0.9)','border:none','padding:10px 22px',
+                        'border-radius:20px','font-size:13px','font-family:Georgia,serif',
+                        'letter-spacing:0.06em','cursor:pointer','z-index:999',
+                        'transition:opacity 0.4s'
+                    ].join(';');
+                    btn.addEventListener('click', () => {
+                        window._installPrompt.prompt();
+                        window._installPrompt.userChoice.then(() => btn.remove());
+                    });
+                    document.body.appendChild(btn);
+                    setTimeout(() => { btn.style.opacity = '0'; setTimeout(() => btn.remove(), 500); }, 8000);
+                });
+            })
+            .catch(err => console.warn('[ZenGarden] SW failed:', err));
+    }
+    </script>
+</body>
+</html>
