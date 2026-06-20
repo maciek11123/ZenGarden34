@@ -847,7 +847,7 @@
 
     const FLOWER_COLORS = [0xff1a1a, 0xffee00, 0x4488ff, 0xff66cc, 0xffffff, 0x9944ff, 0xff6600, 0x00ddaa];
     const activeFlowers = [], fadingFlowers = [];
-    const MAX_FLOWERS = 120;
+    const MAX_FLOWERS = 40;
 
     // Shared geometries — created once
     const _fGeo = {
@@ -875,7 +875,7 @@
 
     // Pool of 40 glow lights — enough to cover a full field of flowers.
     // Low intensity + small radius keeps each light cheap on mobile.
-    const GLOW_POOL_SIZE = 40;
+    const GLOW_POOL_SIZE = 12;
     const glowPool = Array.from({ length: GLOW_POOL_SIZE }, () => {
         const l = new THREE.PointLight(0xffffff, 0, 3.2, 2.0); // decay=2 = physically correct falloff
         l.visible = false;
