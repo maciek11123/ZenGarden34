@@ -624,7 +624,7 @@
     // Foliage cluster: tightly overlapping blobs so they read as one solid canopy mass
     function makeFoliageCluster(colA, colB, baseR) {
         const g = new THREE.Group();
-        const count = 3 + Math.floor(Math.random() * 3); // 3–5 blobs
+        const count = 2; // reduced for mobile perf
         for (let i = 0; i < count; i++) {
             const r   = baseR * (0.70 + Math.random() * 0.45);
             const col = Math.random() > 0.45 ? colA : colB;
@@ -666,7 +666,7 @@
         g.add(trunk);
 
         // Root flares: short thick wedges radiating from base (like image 1)
-        const numRoots = 3 + Math.floor(Math.random() * 2);
+        const numRoots = 2;
         for (let i = 0; i < numRoots; i++) {
             const ra = (i / numRoots) * Math.PI * 2 + Math.random() * 0.6;
             const rl = 0.4 + Math.random() * 0.4;
@@ -684,7 +684,7 @@
         }
 
         // Main branches: 3–5, spreading outward from upper trunk
-        const numBranches = 3 + Math.floor(Math.random() * 3);
+        const numBranches = 2;
         for (let i = 0; i < numBranches; i++) {
             const ba = (i / numBranches) * Math.PI * 2 + (Math.random() - 0.5) * 0.8;
             // Vary lean: some nearly horizontal, some more upright — like image 1
@@ -746,7 +746,7 @@
     scene.add(treeGroup);
 
     // Outer ring: 20 trees outside grass patch (radius 27+)
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 8; i++) {
         const angle  = (i / 20) * Math.PI * 2 + Math.random() * 0.55;
         const radius = 27 + Math.random() * 52;
         const tx = Math.cos(angle) * radius;
@@ -763,7 +763,6 @@
     [
         [15,  0, -13, 0.95, 0.9 ],
         [19,  0,  13, 1.1,  1.1 ],
-        [-20, 0,   6, 0.9,  1.0 ],
     ].forEach(([x, y, z, sc, hsc]) => {
         treeGroup.add(makeLowPolyTree(x, y, z, sc, hsc, Math.random() * Math.PI * 2));
     });
